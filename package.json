@@ -1,6 +1,6 @@
 {
-	"name": "fest",
-	"description": "JavaScript Templates",
+	"name": "fest-lua",
+	"description": "JavaScript Templates + lua",
 	"keywords": ["template", "templating", "html", "xml"],
 	"version": "0.8.0",
 	"repository": {
