@@ -1,6 +1,30 @@
-# Fest [![Build Status](https://travis-ci.org/mailru/fest.png?branch=0.8)](https://travis-ci.org/mailru/fest)
-
+# Fest
 Fest — это шаблонизатор общего назначения, компилирующий XML шаблоны в самодостаточные JavaScript функции. Для установки требуется Node.js >= 0.8.
+
+### кастрированная версия
+* нет неймспейса fest
+* нет контекста, внутри шаблона есть только params
+* выпилины конструкции:
+  - `template` - контексты убраны
+  - `text` - нецелесообразен
+  - `element` - полигон для усложнений
+  - `attributes` - нецелесообразен
+  - `attribute` - нецелесообразен
+  - `each` - заменён на `for`
+  - `choose` - заменён на `switch`
+  - `when` - заменён на `case`
+  - `otherwise` - заменён на `default`
+  - `script` - полигон для усложнений
+
+* изменены параметры и значения по умолчанию
+  ~ `value` _output_ -> _escape_ по умолчанию **text**, вместо html
+  ~ `for` _from="1" to="5"_ **выпилено**
+
+* добавлены
+  + `for` _in_ <- `each`
+  + `switch` <- `choose`
+  + `case` <- `when`
+  + `default` <- `otherwise`
 
 ## Установка
 
@@ -10,363 +34,188 @@ npm install fest
 
 ## Введение
 
-Шаблоны представляют собой XML документы, содержащие HTML, текстовые данные и управляющие конструкции. Шаблон задается парным элементом `<fest:template>` (с указанием пространства имен `http://fest.mail.ru`). Например:
+Шаблоны представляют собой псевдо XML документы, содержащие HTML, текстовые данные и управляющие конструкции.
 
 ```xml
-<fest:template xmlns:fest="http://fest.mail.ru">
-    Hello!
-</fest:template>
+  Hello, <value>params.name</value>!
 ```
 
-Данные передаваемые в шаблон, доступны через переменную с именем, указанным в атрибуте `context_name` элемента `fest:template`:
+_Замечание: начальные и конечные пробелы в текстовых узлах удаляются при компиляции. Если необходимо вывести символ пробела, можно вопспользоваться `<space />`._
 
-```xml
-<fest:template xmlns:fest="http://fest.mail.ru" context_name="json">
-    Hello, <fest:value>json.name</fest:value>!
-</fest:template>
-```
-
-Чтобы посмотреть результат работы, приведенных выше шаблонов, необходимо воспользоваться встроенной утилитой fest-render или API библиотеки.
-
-### fest-render
-
-Утилита `fest-render` используется для компиляции и последующего запуска скомпилированного шаблона из командной строки. В таком случае, для передачи данных в шаблон используется JSON-файл.
-
-hello.json
-```json
-{"name": "John"}
-```
-
-hello.xml
-```xml
-<fest:template xmlns:fest="http://fest.mail.ru" context_name="json">
-  Hello, <fest:value>json.name</fest:value>!
-</fest:template>
-```
-
-```
-$ ./node_modules/.bin/fest-render --json=hello.json hello.xml
-Hello,John!
-```
-
-_Замечание: начальные и конечные пробелы в текстовых узлах удаляются при компиляции. Если необходимо вывести символ пробела, можно вопспользоваться `fest:space`._
-
-### render()
-
-Функция `render()` API компилирует и исполняет шаблон с заданными параметрами.
-
-hello.js
-```javascript
-var fest = require('fest');
-console.log(fest.render('hello.xml'), {name: 'John'});
-```
-
-```
-$ node ./hello.js
-Hello,John!
-```
 ## Данные и вывод
 
-### fest:value
+### value
 
-Служит для вывода значения JavaScript выражения. Поддерживаем 4 режима вывода: html (по умолчанию), text, js и json.
+Служит для вывода значения JavaScript выражения. Поддерживаем 4 режима вывода: text (по умолчанию), html, js и json.
 
 ```xml
-<fest:script><![CDATA[
-    var value = '"<script/>"';
-]]></fest:script>
-<fest:value>value</fest:value><!-- &quot;&lt;script/&gt;&quot; -->
-<fest:value output="text">value</fest:value><!-- "<script/>" -->
-<fest:value output="js">value</fest:value><!-- \"\u003Cscript\/\u003E\" -->
-<fest:value output="json">value</fest:value><!-- "\"\u003Cscript/\u003E\"" -->
+<var name="value" value='"<script/>"' />
+<value>value</value><!-- "<script/>" -->
+<value escape="html">value</value><!-- &quot;&lt;script/&gt;&quot; -->
+<value escape="js">value</value><!-- \"\u003Cscript\/\u003E\" -->
+<value escape="json">value</value><!-- "\"\u003Cscript/\u003E\"" -->
 ```
 
-### fest:var
+### var
 
 Устаналивает локальную JavaScript переменную.
 
 ```xml
-<fest:var name="question">Ultimate Question of Life, The Universe, and Everything</fest:value>
-<fest:value>question</fest:value><!-- Ultimate Question of Life, The Universe, and Everything -->
-<fest:var name="answer" select="question.length - 13" />
-<fest:value>answer</fest:value><!-- 42  -->
+<var name="question" value="Ultimate Question of Life, The Universe, and Everything" />
+<value>question</value><!-- Ultimate Question of Life, The Universe, and Everything -->
+<var name="answer" select="question.length - 13" />
+<value>answer</value><!-- 42  -->
 ```
 
-### fest:text
-
-Выводит неформатированный текст.
-
-```xml
-<fest:text>"Hello"</fest:text><!-- "Hello" -->
-```
-
-### fest:space
+### space
 
 Служит для вывода пробела. Необходим в тех случаях, когда пробел в тектовом узле удаляется при компиляции, например:
 
 ```xml
-Hello,<fest:space/><fest:value>json.name</fest:value>!<!-- Hello, John! -->
+Hello,<space/><value>json.name</value>!<!-- Hello, John! -->
 ```
 
-### fest:set
+### set
 
-Объявляет именованный подшаблон. Содержимое `fest:set` не будет выполнено до тех пор, пока не будет вызван блок с таким же имененем с помощью `fest:get`.
-
-```xml
-<fest:set name="name">John</fest:set>
-```
+Объявляет именованный блок. Содержимое `set` не будет выполнено до тех пор, пока не будет вызван блок с таким же имененем с помощью `get`.
 
 ```xml
-<fest:set name="full_name">
-    <fest:get name="name"/><fest:space/>F. Kennedy
-</fest:set>
-```
-
-Для `fest:set` можно использовать атрибут `test`. Операция выполнится, если его значение (JavaScript выражение) истинно.
-
-```xml
-<fest:set name="name" test="false">should not be set</fest:set>
-```
-
-Внутри `fest:set` доступен контекст `params`, передаваемый через `fest:get`.
-
-```xml
-<fest:set name="line">
-    Hello,<fest:space/><fest:value>params.username</fest:value>!
-</fest:set>
-<fest:get name="line">{username: "John"}</fest:get><!-- Hello, John! -->
-```
-
-### fest:get
-
-Выводит содержимое блока, объявленного через `fest:set`.
-
-```xml
-<fest:get name="name"/>
+<set name="name">John</set>
 ```
 
 ```xml
-<fest:get name="name">{'some': 'data'}</fest:get>
+<set name="full_name">
+    <get name="name"/><space/>F. Kennedy
+</set>
 ```
 
-С помощью `fest:param` можно передавать в блок XML-данные.
+Внутри `set` доступен контекст `params`, передаваемый через `get`.
 
 ```xml
-<fest:get name="page">
-    <fest:param name="doctype">html</fest:param>
-    <fest:params>
-        {
-            title: json.title
-        }
-    </fest:params>
-    <fest:param name="content">
-        <article>
-            <fest:if test="json.title">
-                <h1><fest:value>json.title</fest:value></h1>
-            </fest:if>
-        </article>
-    </fest:param>
-</fest:get>
-<fest:set name="page">
-    <fest:doctype><fest:value>params.doctype</fest:value></fest:doctype>
-    <title><fest:value>params.title</fest:value></title>
-    <body>
-        <fest:value output="text">params.content</fest:value>
-    </body>
-</fest:set>
+<set name="line">
+  Hello,<space/><value>params.username</value>!
+</set>
+<get name="line">{username: "John"}</get><!-- Hello, John! -->
+```
+
+### get
+
+Выводит содержимое блока, объявленного через `set`.
+
+```xml
+<get name="name"/>
+```
+
+```xml
+<get name="name">{'some': 'data'}</get>
 ```
 
 Внутри атрибута `name` можно использовать JavaScript выражения для вычисления имени блока во время выполнения. Значения выражений, заключенных в фигурные скобки, объединяются с примыкающим текстом. Помимо этого, можно использовать атрибут `select`.
 
 ```xml
-<fest:script>
-    var name = 'foo'
-</fest:srcipt>
-<fest:get select="name"/><!-- foo -->
-<fest:set name="foo">foo</fest:set>
-<fest:set name="bar">bar</fest:set>
-<fest:get name="b{true?'a':''}r"/><!-- bar -->
-```
-
-### fest:element
-
-Выводит HTML элемент с переменным именем.
-
-```xml
-<fest:element name="div" />
-<fest:script>
-    var variable = 'table';
-</fest:script>
-<fest:element select="variable">
-    fest code
-</fest:element>
-<fest:element name="{variable2}">
-    fest code
-</fest:element>
-```
-
-Результат:
-
-```xml
-<div></div><table>fest code</table><div>fest code</div>
-```
-
-### fest:attributes, fest:attribute
-
-Добавляет атрибуты к родительскому элементы. Все `fest:attribute` должны быть внутри блока `fest:attributes`, который должен идти первым внутри элемента.
-
-```xml
-<a>
-    <fest:attributes>
-        <fest:attribute name="href"><fest:value>json.href</fest:value></fest:attribute>
-    </fest:attributes>
-    Some link
-</a>
+<var name="name" value="'foo'" />
+<get select="name"/><!-- foo -->
+<set name="foo">foo</set>
+<set name="bar">bar</set>
+<get name="b{true?'a':''}r"/><!-- bar -->
 ```
 
 Существует быстрый способ вывести значение в атрибут:
 
 ```xml
-<a href="{json.href}">Some link</a>
-```
-
-Имена атрибутов можно вычислять в момент исполнения шаблона:
-
-```xml
-<div>
-    <fest:attributes>
-        <fest:attribute name="data-{json.name}" value="{json.value}" />
-    </fest:attributes>
-</div>
+<a href="{params.href}">Some link</a>
 ```
 
 ## Управляющие конструкции
 
-### fest:each
-
-Предоставляет механизм итерации по объекту.
-
-```xml
-<fest:script>var obj = {"foo": "bar"}</fest:script>
-<fest:each iterate="obj" index="i">
-    <fest:value>i</fest:value>=<fest:value>obj[i]</fest:value><!-- foo=bar -->
-</fest:each>
-<fest:each iterate="obj" index="i" value="v">
-    <fest:value>i</fest:value>=<fest:value>v</fest:value><!-- foo=bar -->
-</fest:each>
-```
-
-### fest:for
+### for
 
 Выполняет итерацию по массиву или числовому ряду.
 
 ```xml
-<fest:script>json.items = ['a', 'b', 'c']</fest:script>
-<fest:for iterate="json.items" index="i">
-    <fest:value>json.items[i]</fest:value><!-- abc -->
-</fest:for>
-<fest:for iterate="json.items" index="i" value="v">
-    <fest:value>v</fest:value><!-- abc -->
-</fest:for>
-<fest:for from="1" to="5" index="i">
-    <fest:value>i</fest:value><!-- 12345 -->
-</fest:for>
+<!-- params.items = ['a', 'b', 'c'] -->
+<for iterate="params.items" index="i">
+  <value>params.items[i]</value>
+</for><!-- abc -->
+<for iterate="params.items" index="i" value="v">
+  <value>v</value>
+</for><!-- abc -->
 ```
 
-### fest:if
+### if, elseif, else
 
 Условный оператор.
 
 ```xml
-<fest:if test="true">
-    It's true!
-</fest:if>
+<if test="var">
+    IF!
+  <elseif test="var2" />
+    ELSEIF?
+  <else />
+    ELSE.
+</if>
 ```
 
-### fest:choose, fest:when, fest:otherwise
-
-Ветвление. Если ни у одного `fest:when` условие не выполнено, будет выбрана ветвь `fest:otherwise`.
+### switch case default
 
 ```xml
-<fest:choose>
-    <fest:when test="1">
-        <fest:text>one</fest:text>
-    </fest:when>
-
-    <fest:when test="2">
-        <fest:text>two</fest:text>
-    </fest:when>
-
-    <fest:otherwise>
-        <fest:text>More than 2</fest:text>
-    </fest:otherwise>
-</fest:choose>
+<switch test="var">
+<case is="1" />
+  var is 1
+<case is="2" />
+  var is 2
+<default />
+  var is not 1 or 2
+</switch>
 ```
 
 ## Остальные конструкции
 
-### fest:cdata
+### cdata
 
 Служит для вывода блока CDATA.
 
 ```xml
-<script>
-    <fest:cdata>
-        <![CDATA[alert ("2" < 3);]]>
-    </fest:cdata>
-</script>
+<cdata>
+  alert ("2" < 3);
+</cdata><!-- <![CDATA[alert ("2" < 3);]]> -->
 ```
 
-### fest:comment
+### comment
 
 Выводит HTML комментарий.
 
 ```xml
-<fest:comment>comment</fest:comment>
+<comment>comment</comment><!-- <!--comment--> -->
 ```
 
-### fest:doctype
+### doctype
 
 Задает DOCTYPE генерируемой страницы.
 
 ```xml
-<fest:doctype>html</fest:doctype>
+<doctype>html</doctype><!-- <!doctype html> -->
 ```
 
-### fest:script
+### include
 
-Служит для выполнения произвольного JavaScript.
+Вставляет содержимое другого шаблона с заданным params.
 
 ```xml
-<fest:script>
-    <![CDATA[
-        json.script = 2 < 3;
-    ]]>
-</fest:script>
+<include params="params.foreach" src="./include_foreach.xml" />
+<include src="./include_foreach.xml">
+  params.foreach
+</include>
+
 ```
 
-Содержимое `fest:script` можно загрузить из файла, указав в атрибуте `src` путь к нему.
-
-```xml
-<fest:script src="script.js"/>
-```
-
-### fest:include
-
-Вставляет содержимое другого шаблона с заданным контекстом.
-
-```xml
-<fest:script>json.list = ['a', 'b', 'c'];</fest:script>
-<fest:include context="json.list" src="./include_foreach.xml"/>
-```
-
-### fest:insert
+### insert
 
 Выводит содержимое файла:
 
 ```xml
 <style type="text/css">
-    <fest:insert src="style.css"/>
+  <insert src="style.css" />
 <style>
 ```
 
@@ -595,3 +444,43 @@ Grunt используется для валидации JS (тестов) и з
 $ ./bin/fest-build --dir=spec/templates --exclude=*error* --compile.beautify=true --out=spec/expected/initial
 $ ./bin/fest-build --dir=spec/templates --exclude=*error* --compile.beautify=true --out=spec/expected/translated --translate=spec/templates/en_US.po
 ```
+
+
+
+
+
+
+
+        
+        <var name="a">
+          <div class="varA">VarA</div>
+          <get name="varA" />
+        </var>
+
+        <switch test="params.a">
+          <case is="2" />
+            <div>TROLOLO 2</div>
+          <case is="3" />
+            <div>TROLOLO 3</div>
+          <default />
+            DEFAULT!!
+        </switch>
+
+        <if test="params.test !== 'test'">
+            trololo IIIFFF
+          <elseif test="params.test === rerere" />
+            ELEEEIFFF
+          <else />
+            ELSE
+        </if>
+
+        <var name="b" value="acascasca" />
+        <var name="c" select="params.c ? asdasdasd : ascascasc " />
+
+        <get name="header">
+          <params>params.header</params>
+          <param name="a">
+            <div class="params.a">PARAMS</div>
+          </param>
+          <param name="b" select=" params.a ? 12 : 23 " />
+        </get>
