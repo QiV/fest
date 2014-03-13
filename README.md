@@ -1,6 +1,6 @@
 # Fest
 Fest — это шаблонизатор общего назначения, компилирующий XML шаблоны в самодостаточные JavaScript функции. Для установки требуется Node.js >= 0.8.
-
+![alt text](http://24.media.tumblr.com/0fc9023daa303558d036ecd63fd2c24e/tumblr_mjedslIPPH1qbyxr0o1_500.gif "My fest")
 ### кастрированная версия
 * нет неймспейса fest
 * нет контекста, внутри шаблона есть только params
